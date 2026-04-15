@@ -1,0 +1,8 @@
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+data/api_key.txt
+data/api_log.jsonl
+data/*.db
+SESSION_NOTES.md

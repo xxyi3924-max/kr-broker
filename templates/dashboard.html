@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KR Broker</title>
+  <link rel="stylesheet" href="/static/css/dashboard.css?v=13" />
+</head>
+<body>
+
+<!-- ─── API Key Setup Screen ─── -->
+<div id="api-key-screen">
+  <div class="setup-wrapper">
+    <div class="setup-card">
+      <div class="setup-logo">KR <span>Broker</span></div>
+      <p class="setup-desc">Connect your Agora Agent API key to access the trading dashboard.</p>
+      <div class="setup-form">
+        <input
+          type="text"
+          id="api-key-input"
+          class="form-control"
+          placeholder="ak_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn-submit" style="background: var(--accent); color: #fff; margin-top: 10px;" onclick="setupApiKey()">
+          Connect
+        </button>
+      </div>
+      <div class="setup-help">
+        Get your API key from
+        <a href="https://kaigora.com/en/profile/api-key/agent-docs" target="_blank">kaigora.com</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.setup-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.setup-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+.setup-logo {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  letter-spacing: -1px;
+}
+.setup-desc {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+.setup-form input { text-align: center; font-family: monospace; font-size: 13px; }
+.setup-help {
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.setup-help a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.setup-help a:hover { text-decoration: underline; }
+
+/* ── Agent Activity Feed ── */
+.ae-filter-bar {
+  display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.ae-filter-btn {
+  font-size: 11px; padding: 3px 10px; border-radius: 12px;
+  border: 1px solid #1e2e42; background: transparent;
+  color: #4a5568; cursor: pointer; font-weight: 600;
+  letter-spacing: 0.4px; transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.ae-filter-btn:hover { border-color: #2d4a6a; color: #6a8baa; }
+.ae-filter-btn.active { background: #111d2e; border-color: #2d5080; color: #90bce0; }
+
+.ae-cycle-group {
+  border: 1px solid #111d2e; border-radius: 6px; margin-bottom: 6px; overflow: hidden;
+}
+.ae-cycle-header {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  background: #0a1520; cursor: pointer; user-select: none;
+}
+.ae-cycle-header:hover { background: #0d1a26; }
+.ae-cycle-toggle {
+  color: #2d4a6a; font-size: 9px; flex-shrink: 0;
+  transition: transform 0.2s; display: inline-block;
+}
+.ae-cycle-group.open .ae-cycle-toggle { transform: rotate(90deg); }
+.ae-cycle-time { color: #6a8baa; font-family: monospace; font-size: 12px; font-weight: 600; }
+.ae-cycle-badges { display: flex; gap: 4px; margin-left: auto; }
+.ae-cycle-badge {
+  font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
+  letter-spacing: 0.3px; white-space: nowrap;
+}
+.ae-cycle-badge.orders  { background: #0a2a1a; color: #34d399; border: 1px solid #0d3a22; }
+.ae-cycle-badge.errors  { background: #2a1010; color: #f87171; border: 1px solid #3a1818; }
+.ae-cycle-badge.signals { background: #1a1030; color: #9f7aea; border: 1px solid #241540; }
+.ae-cycle-body { padding: 4px 8px 2px; }
+
+.agent-event {
+  display: flex; gap: 10px; padding: 6px 0;
+  border-bottom: 1px solid #0d1520; font-size: 12px; align-items: flex-start;
+}
+.agent-event:last-child { border-bottom: none; }
+.ae-icon { min-width: 18px; text-align: center; padding-top: 1px; flex-shrink: 0; }
+.ae-time {
+  color: #3a5068; min-width: 52px; font-family: monospace; flex-shrink: 0;
+  font-size: 11px; padding-top: 1px;
+}
+.ae-label {
+  min-width: 62px; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.6px; text-transform: uppercase; flex-shrink: 0; padding-top: 1px;
+}
+.ae-msg { color: #7a8fa8; word-break: break-word; line-height: 1.5; }
+.ae-cycle_start .ae-label  { color: #60a5fa; }
+.ae-cycle_summary .ae-label { color: #4a7aaa; }
+.ae-cycle_summary .ae-msg  { color: #4a7aaa; }
+.ae-order_ok .ae-label     { color: #34d399; }
+.ae-order_ok .ae-msg       { color: #2a9a6a; }
+.ae-order_fail .ae-label   { color: #f87171; }
+.ae-order_fail .ae-msg     { color: #c05050; }
+.ae-error .ae-label        { color: #f87171; }
+.ae-error .ae-msg          { color: #c05050; }
+.ae-broker_warn .ae-label  { color: #f59e0b; }
+.ae-broker_warn .ae-msg    { color: #8a6020; }
+.ae-dropped .ae-label      { color: #2d4060; }
+.ae-dropped .ae-msg        { color: #2d4060; }
+.ae-selected .ae-label     { color: #9f7aea; }
+</style>
+
+<!-- ─── Main Dashboard ─── -->
+<div id="main-dashboard" style="display:none">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">KR <span>Broker</span></div>
+    <div class="header-status">
+      <span id="loading-indicator" style="display:none; align-items:center; gap:6px;">
+        <span class="spinner"></span>
+        <span style="font-size:11px;">Refreshing…</span>
+      </span>
+      <span id="agent-badge" onclick="switchTab('agent')" title="View agent activity" style="
+        font-size:11px; padding:3px 8px; border-radius:4px; background:#111d2e;
+        border:1px solid #1e2e42; cursor:pointer; color:#8a9bb0; margin-right:6px;
+        display:inline-flex; align-items:center; gap:4px;">
+        Agent · <span id="agent-badge-time">–</span>
+        <span id="agent-badge-errors" style="color:#f59e0b; display:none;">⚠<span id="agent-error-count">0</span></span>
+      </span>
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Connecting…</span>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Order Window Banner -->
+    <div id="order-window-banner" class="banner"></div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Equity</div>
+        <div class="kpi-value" id="kpi-equity">—</div>
+        <div class="kpi-sub" id="kpi-total-pnl-pct">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Cash Available</div>
+        <div class="kpi-value" id="kpi-cash">—</div>
+        <div class="kpi-sub" id="kpi-total-pnl">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Unrealized P&L</div>
+        <div class="kpi-value" id="kpi-unrealized">—</div>
+        <div class="kpi-sub" id="kpi-unrealized-pct">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total Return</div>
+        <div class="kpi-value" id="kpi-total-pnl">—</div>
+        <div class="kpi-sub" id="kpi-total-pnl-pct2">—</div>
+      </div>
+    </div>
+
+    <!-- Equity Chart -->
+    <div class="card mb-4">
+      <div class="section-header" style="padding: 12px 16px 0;">
+        <span class="section-title">Equity Curve</span>
+        <button id="refresh-btn" class="refresh-btn" onclick="refreshAll()">↻ Refresh</button>
+      </div>
+      <canvas id="equity-chart" width="800" height="140" style="width:100%;height:140px;padding:8px 16px 16px;"></canvas>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex; gap:4px; margin-bottom:12px;">
+      <button class="tab-btn btn btn-outline active" data-tab="positions">Positions</button>
+      <button class="tab-btn btn btn-outline" data-tab="pending">Pending Orders</button>
+      <button class="tab-btn btn btn-outline" data-tab="assets">Available Assets</button>
+      <button class="tab-btn btn btn-outline" data-tab="conditional">Conditional Orders</button>
+      <button class="tab-btn btn btn-outline" data-tab="agent" id="agent-tab-btn">Agent</button>
+    </div>
+
+    <!-- ── Tab: Positions ── -->
+    <div class="tab-pane" data-tab="positions">
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortBy('ticker')">Asset</th>
+              <th onclick="sortBy('avg_cost')">Avg Cost</th>
+              <th onclick="sortBy('current_price')">Current</th>
+              <th onclick="sortBy('unrealized')">Unrealized P&L</th>
+              <th onclick="sortBy('pct')">% Change</th>
+              <th>Market Value</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="positions-body">
+            <tr><td colspan="7" class="empty-state">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="position-charts" style="display:grid; gap:12px; margin-top:12px;"></div>
+    </div>
+
+    <!-- ── Tab: Pending Orders ── -->
+    <div class="tab-pane" data-tab="pending" style="display:none;">
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Side</th>
+              <th>Asset</th>
+              <th>Value</th>
+              <th>State</th>
+              <th>Cancel</th>
+            </tr>
+          </thead>
+          <tbody id="pending-body">
+            <tr><td colspan="6" class="empty-state">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Tab: Available Assets ── -->
+    <div class="tab-pane" data-tab="assets" style="display:none;">
+      <div class="card" style="padding:12px 16px;">
+        <input
+          type="text"
+          id="asset-search"
+          class="form-control"
+          placeholder="Search assets…"
+          style="max-width:300px;"
+        />
+      </div>
+      <div class="card" style="margin-top:8px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Price</th>
+              <th>Change</th>
+              <th>Type</th>
+              <th>Trade</th>
+            </tr>
+          </thead>
+          <tbody id="assets-body">
+            <tr><td colspan="5" class="empty-state">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Tab: Conditional Orders ── -->
+    <div class="tab-pane" data-tab="conditional" style="display:none;">
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Side</th>
+              <th>Type</th>
+              <th>Value</th>
+              <th>Limit Price</th>
+              <th>Trigger Price</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Cancel</th>
+            </tr>
+          </thead>
+          <tbody id="conditional-body">
+            <tr><td colspan="9" class="empty-state">No conditional orders</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="conditional-charts" style="display:grid; gap:12px; margin-top:12px;"></div>
+    </div>
+
+    <!-- ── Tab: Agent Activity ── -->
+    <div class="tab-pane" data-tab="agent" style="display:none;">
+      <div class="card">
+        <div id="agent-log-feed">
+          <p class="empty-state">Loading agent activity…</p>
+        </div>
+        <div style="margin-top:10px; font-size:11px; color:#2d4060;">
+          Parsed from <code style="background:#0d1a26; padding:1px 5px; border-radius:3px;">~/agent.log</code> · refreshes every 30s
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</div><!-- /main-dashboard -->
+
+<!-- ─── Order Modal ─── -->
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Place Order</div>
+        <div style="font-size:13px; color:var(--muted); margin-top:2px;">
+          <span id="modal-ticker">—</span>
+          <span style="margin-left:8px; font-size:12px;" id="modal-current-price">—</span>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+
+    <!-- Buy/Sell Tabs -->
+    <div class="modal-body">
+      <div class="order-tabs">
+        <button class="order-tab buy active" data-side="buy" onclick="state.currentOrder.side='buy'; renderModal();">Buy</button>
+        <button class="order-tab sell" data-side="sell" onclick="state.currentOrder.side='sell'; renderModal();">Sell</button>
+      </div>
+
+      <!-- Order Type -->
+      <div class="form-group">
+        <label class="form-label">Order Type</label>
+        <div class="type-tabs">
+          <button class="type-tab active" data-type="MARKET" onclick="state.currentOrder.type='MARKET'; renderModal();">Market</button>
+          <button class="type-tab" data-type="LIMIT" onclick="state.currentOrder.type='LIMIT'; renderModal();">Limit</button>
+          <button class="type-tab" data-type="STOP_LIMIT" onclick="state.currentOrder.type='STOP_LIMIT'; renderModal();">Stop-Limit</button>
+        </div>
+      </div>
+
+      <!-- Amount / Quantity -->
+      <div class="form-group">
+        <label class="form-label" id="order-input-label">Amount ($)</label>
+        <input
+          type="number"
+          id="order-quantity"
+          class="form-control"
+          placeholder="e.g. 1000"
+          min="0"
+          step="any"
+          oninput="state.currentOrder.quantity=this.value; updateOrderSummary();"
+        />
+        <a id="order-quantity-max" href="#" style="display:none; font-size:11px; color:var(--accent); margin-top:4px; display:none;">Max</a>
+      </div>
+
+      <!-- Limit Price -->
+      <div class="form-group" id="limit-price-group" style="display:none;">
+        <label class="form-label">Limit Price ($)</label>
+        <input type="number" id="order-limit-price" class="form-control"
+          placeholder="e.g. 250.00" min="0" step="any"
+          oninput="state.currentOrder.limitPrice=this.value; updateOrderSummary();" />
+        <div class="form-hint" id="limit-price-hint"></div>
+      </div>
+
+      <!-- Trigger Price (Stop-Limit only) -->
+      <div class="form-group" id="trigger-price-group" style="display:none;">
+        <label class="form-label">Trigger Price ($)</label>
+        <input type="number" id="order-trigger-price" class="form-control"
+          placeholder="e.g. 255.00" min="0" step="any"
+          oninput="state.currentOrder.triggerPrice=this.value;" />
+        <div class="form-hint" id="trigger-price-hint"></div>
+      </div>
+
+      <!-- Summary -->
+      <div class="order-summary" id="order-summary">
+        <div class="summary-row"><span>Quantity</span><span>—</span></div>
+        <div class="summary-row"><span>Execution Price</span><span>—</span></div>
+        <div class="summary-row"><span>Fee</span><span>—</span></div>
+        <div class="summary-row total"><span>Total</span><span>—</span></div>
+      </div>
+
+      <!-- Submit -->
+      <button id="order-submit-btn" class="btn-submit buy" onclick="handleSubmitOrder()">
+        Buy
+      </button>
+    </div>
+
+    <div class="modal-footer">
+      Agora Agent API · Trading Simulation
+    </div>
+  </div>
+</div>
+
+<!-- ─── Toasts ─── -->
+<div id="toast-container" class="toast-container"></div>
+
+<script src="/static/js/dashboard.js?v=16"></script>
+</body>
+</html>
