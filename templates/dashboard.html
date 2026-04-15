@@ -78,70 +78,70 @@
 
 /* ── Agent Activity Feed ── */
 .ae-filter-bar {
-  display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;
+  display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap;
 }
 .ae-filter-btn {
-  font-size: 11px; padding: 3px 10px; border-radius: 12px;
-  border: 1px solid #1e2e42; background: transparent;
-  color: #4a5568; cursor: pointer; font-weight: 600;
-  letter-spacing: 0.4px; transition: color 0.15s, border-color 0.15s, background 0.15s;
+  font-size: 11px; padding: 4px 12px; border-radius: 6px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); cursor: pointer; font-weight: 500;
+  transition: color 0.15s, background 0.15s;
 }
-.ae-filter-btn:hover { border-color: #2d4a6a; color: #6a8baa; }
-.ae-filter-btn.active { background: #111d2e; border-color: #2d5080; color: #90bce0; }
+.ae-filter-btn:hover { background: var(--hover); color: var(--text); }
+.ae-filter-btn.active { background: var(--hover); border-color: var(--accent); color: var(--accent); }
 
 .ae-cycle-group {
-  border: 1px solid #111d2e; border-radius: 6px; margin-bottom: 6px; overflow: hidden;
+  border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; overflow: hidden;
 }
 .ae-cycle-header {
   display: flex; align-items: center; gap: 8px; padding: 8px 12px;
-  background: #0a1520; cursor: pointer; user-select: none;
+  background: rgba(255,255,255,0.02); cursor: pointer; user-select: none;
 }
-.ae-cycle-header:hover { background: #0d1a26; }
+.ae-cycle-header:hover { background: var(--hover); }
 .ae-cycle-toggle {
-  color: #2d4a6a; font-size: 9px; flex-shrink: 0;
+  color: var(--muted); font-size: 9px; flex-shrink: 0;
   transition: transform 0.2s; display: inline-block;
 }
 .ae-cycle-group.open .ae-cycle-toggle { transform: rotate(90deg); }
-.ae-cycle-time { color: #6a8baa; font-family: monospace; font-size: 12px; font-weight: 600; }
+.ae-cycle-time { color: var(--text); font-family: monospace; font-size: 12px; font-weight: 500; }
 .ae-cycle-badges { display: flex; gap: 4px; margin-left: auto; }
 .ae-cycle-badge {
-  font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
+  font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 4px;
   letter-spacing: 0.3px; white-space: nowrap;
 }
-.ae-cycle-badge.orders  { background: #0a2a1a; color: #34d399; border: 1px solid #0d3a22; }
-.ae-cycle-badge.errors  { background: #2a1010; color: #f87171; border: 1px solid #3a1818; }
-.ae-cycle-badge.signals { background: #1a1030; color: #9f7aea; border: 1px solid #241540; }
-.ae-cycle-body { padding: 4px 8px 2px; }
+.ae-cycle-badge.orders  { background: rgba(63,185,80,0.12);  color: var(--green);  border: 1px solid rgba(63,185,80,0.25); }
+.ae-cycle-badge.errors  { background: rgba(248,81,73,0.12);  color: var(--red);    border: 1px solid rgba(248,81,73,0.25); }
+.ae-cycle-badge.signals { background: rgba(47,129,247,0.12); color: var(--accent); border: 1px solid rgba(47,129,247,0.25); }
+.ae-cycle-body { padding: 4px 12px 4px; border-top: 1px solid var(--border); }
 
 .agent-event {
   display: flex; gap: 10px; padding: 6px 0;
-  border-bottom: 1px solid #0d1520; font-size: 12px; align-items: flex-start;
+  border-bottom: 1px solid var(--border); font-size: 12px; align-items: flex-start;
 }
 .agent-event:last-child { border-bottom: none; }
 .ae-icon { min-width: 18px; text-align: center; padding-top: 1px; flex-shrink: 0; }
 .ae-time {
-  color: #3a5068; min-width: 52px; font-family: monospace; flex-shrink: 0;
+  color: var(--muted); min-width: 44px; font-family: monospace; flex-shrink: 0;
   font-size: 11px; padding-top: 1px;
 }
 .ae-label {
   min-width: 62px; font-size: 10px; font-weight: 700;
   letter-spacing: 0.6px; text-transform: uppercase; flex-shrink: 0; padding-top: 1px;
+  color: var(--muted);
 }
-.ae-msg { color: #7a8fa8; word-break: break-word; line-height: 1.5; }
-.ae-cycle_start .ae-label  { color: #60a5fa; }
-.ae-cycle_summary .ae-label { color: #4a7aaa; }
-.ae-cycle_summary .ae-msg  { color: #4a7aaa; }
-.ae-order_ok .ae-label     { color: #34d399; }
-.ae-order_ok .ae-msg       { color: #2a9a6a; }
-.ae-order_fail .ae-label   { color: #f87171; }
-.ae-order_fail .ae-msg     { color: #c05050; }
-.ae-error .ae-label        { color: #f87171; }
-.ae-error .ae-msg          { color: #c05050; }
-.ae-broker_warn .ae-label  { color: #f59e0b; }
-.ae-broker_warn .ae-msg    { color: #8a6020; }
-.ae-dropped .ae-label      { color: #2d4060; }
-.ae-dropped .ae-msg        { color: #2d4060; }
-.ae-selected .ae-label     { color: #9f7aea; }
+.ae-msg { color: var(--muted); word-break: break-word; line-height: 1.5; }
+.ae-cycle_start .ae-label   { color: var(--accent); }
+.ae-cycle_summary .ae-label { color: var(--muted); }
+.ae-cycle_summary .ae-msg   { color: var(--muted); }
+.ae-order_ok .ae-label      { color: var(--green); }
+.ae-order_ok .ae-msg        { color: var(--green); opacity: 0.7; }
+.ae-order_fail .ae-label    { color: var(--red); }
+.ae-order_fail .ae-msg      { color: var(--red); opacity: 0.7; }
+.ae-error .ae-label         { color: var(--red); }
+.ae-error .ae-msg           { color: var(--red); opacity: 0.7; }
+.ae-broker_warn .ae-label   { color: var(--yellow); }
+.ae-dropped .ae-label       { color: var(--border); }
+.ae-dropped .ae-msg         { color: var(--border); }
+.ae-selected .ae-label      { color: var(--accent); }
 </style>
 
 <!-- ─── Main Dashboard ─── -->
@@ -314,12 +314,12 @@
 
     <!-- ── Tab: Agent Activity ── -->
     <div class="tab-pane" data-tab="agent" style="display:none;">
-      <div class="card">
+      <div class="card" style="padding: 14px 16px;">
         <div id="agent-log-feed">
           <p class="empty-state">Loading agent activity…</p>
         </div>
-        <div style="margin-top:10px; font-size:11px; color:#2d4060;">
-          Parsed from <code style="background:#0d1a26; padding:1px 5px; border-radius:3px;">~/agent.log</code> · refreshes every 30s
+        <div style="margin-top:10px; font-size:11px; color: var(--muted);">
+          Parsed from <code style="background:var(--bg); padding:1px 5px; border-radius:3px; font-size:11px;">~/agent.log</code> · refreshes every 30s
         </div>
       </div>
     </div>
