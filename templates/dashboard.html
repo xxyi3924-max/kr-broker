@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KR Broker</title>
-  <link rel="stylesheet" href="/static/css/dashboard.css?v=14" />
+  <link rel="stylesheet" href="/static/css/dashboard.css?v=15" />
 </head>
 <body>
 
@@ -141,12 +141,13 @@
     </div>
 
     <!-- Tabs -->
-    <div style="display:flex; gap:4px; margin-bottom:12px;">
-      <button class="tab-btn btn btn-outline active" data-tab="positions">Positions</button>
-      <button class="tab-btn btn btn-outline" data-tab="pending">Pending Orders</button>
-      <button class="tab-btn btn btn-outline" data-tab="assets">Available Assets</button>
-      <button class="tab-btn btn btn-outline" data-tab="conditional">Conditional Orders</button>
-      <button class="tab-btn btn btn-outline" data-tab="agent" id="agent-tab-btn">Agent</button>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="positions">Positions</button>
+      <button class="nav-tab" data-tab="pending">Pending Orders</button>
+      <button class="nav-tab" data-tab="assets">Assets</button>
+      <button class="nav-tab" data-tab="conditional">Conditionals</button>
+      <button class="nav-tab" data-tab="history">History</button>
+      <button class="nav-tab" data-tab="agent" id="agent-tab-btn">Agent</button>
     </div>
 
     <!-- ── Tab: Positions ── -->
@@ -245,6 +246,33 @@
         </table>
       </div>
       <div id="conditional-charts" style="display:grid; gap:12px; margin-top:12px;"></div>
+    </div>
+
+    <!-- ── Tab: History ── -->
+    <div class="tab-pane" data-tab="history" style="display:none;">
+      <div id="history-stats" class="history-stats"></div>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Time (ET)</th>
+              <th>Asset</th>
+              <th>Side</th>
+              <th class="num">Qty</th>
+              <th class="num">Price</th>
+              <th class="num">Value</th>
+              <th class="num">Realized P&amp;L</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr><td colspan="8" class="empty-state">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="font-size:11px; color:var(--muted); margin-top:4px;">
+        P&amp;L estimated from order submission prices (FIFO). Only includes trades placed through this dashboard.
+      </div>
     </div>
 
     <!-- ── Tab: Agent Activity ── -->

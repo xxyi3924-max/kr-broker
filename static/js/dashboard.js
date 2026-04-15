@@ -16,6 +16,7 @@ let state = {
   currentOrder: { side: 'buy', type: 'MARKET', asset: null },
   agentLog: [],
   agentFilter: 'all',
+  tradeHistory: [],
 };
 
 let pollTimer = null;
@@ -44,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Tab nav
-  document.querySelectorAll('.tab-btn').forEach(btn => {
+  document.querySelectorAll('.nav-tab').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 
@@ -112,16 +113,18 @@ async function refreshAll() {
   _refreshing = true;
   showLoading(true);
   try {
-    const [portfolio, assets, pending, conditional] = await Promise.all([
+    const [portfolio, assets, pending, conditional, historyData] = await Promise.all([
       fetchPortfolio(),
       fetchAssets(),
       fetchPendingOrders(),
       fetchConditionalOrders(),
+      fetchAPI('/history').catch(() => ({ trades: [] })),
     ]);
     state.portfolio = portfolio;
     state.assets = assets.assets || [];
     state.pendingOrders = pending.pending_orders || [];
     state.conditionalOrders = conditional.orders || [];
+    state.tradeHistory = historyData.trades || [];
     state.lastFetch = new Date();
     fetchCount++;
 
@@ -222,6 +225,7 @@ function renderAll() {
   renderConditionalCharts();
   renderAssets();
   renderEquityChart();
+  renderHistory();
 }
 
 // ─── Order Window ───
@@ -1171,12 +1175,128 @@ function renderAgentBadge() {
 
 // ─── Tabs ───
 function switchTab(tab) {
-  document.querySelectorAll('.tab-btn').forEach(b => {
+  document.querySelectorAll('.nav-tab').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
   document.querySelectorAll('.tab-pane').forEach(p => {
     p.style.display = p.dataset.tab === tab ? 'block' : 'none';
   });
+}
+
+// ─── Trade History ───
+function computeTradePnL(trades) {
+  const costBasis = {}; // ticker -> [{qty, price}]
+  const sorted = [...trades].reverse(); // chronological order
+  const withPnl = [];
+
+  for (const t of sorted) {
+    const ticker = t.ticker;
+    if (!costBasis[ticker]) costBasis[ticker] = [];
+    let pnl = null;
+    const side = (t.side || '').toLowerCase();
+    const qty = Number(t.quantity) || 0;
+    const price = Number(t.price) || 0;
+
+    if (side === 'buy') {
+      costBasis[ticker].push({ qty, price });
+    } else if (side === 'sell') {
+      let remaining = qty;
+      let totalCost = 0;
+      while (remaining > 0 && costBasis[ticker].length > 0) {
+        const lot = costBasis[ticker][0];
+        const used = Math.min(remaining, lot.qty);
+        totalCost += used * lot.price;
+        remaining -= used;
+        lot.qty -= used;
+        if (lot.qty <= 0) costBasis[ticker].shift();
+      }
+      // If remaining > 0, we have no cost basis — pnl is partial
+      const costQty = qty - remaining;
+      if (costQty > 0) {
+        pnl = costQty * price - totalCost;
+      }
+    }
+    withPnl.push({ ...t, pnl });
+  }
+  return withPnl.reverse(); // back to newest-first
+}
+
+function renderHistory() {
+  const tbody = document.getElementById('history-body');
+  const statsEl = document.getElementById('history-stats');
+  if (!tbody) return;
+
+  const trades = state.tradeHistory;
+
+  if (!trades.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No trade history yet</td></tr>';
+    if (statsEl) statsEl.innerHTML = '';
+    return;
+  }
+
+  const withPnl = computeTradePnL(trades);
+  const sells = withPnl.filter(t => (t.side || '').toLowerCase() === 'sell' && t.pnl !== null);
+  const totalPnl = sells.reduce((sum, t) => sum + t.pnl, 0);
+  const wins = sells.filter(t => t.pnl > 0).length;
+  const winRate = sells.length > 0 ? (wins / sells.length * 100) : null;
+  const avgPnl = sells.length > 0 ? totalPnl / sells.length : null;
+
+  // Stats
+  if (statsEl) {
+    const fmtPnl = (n) => `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}`;
+    statsEl.innerHTML = `
+      <div class="history-stat">
+        <div class="history-stat-label">Total Trades</div>
+        <div class="history-stat-value">${trades.length}</div>
+      </div>
+      <div class="history-stat">
+        <div class="history-stat-label">Realized P&L</div>
+        <div class="history-stat-value ${sells.length ? (totalPnl >= 0 ? 'positive' : 'negative') : ''}">
+          ${sells.length ? fmtPnl(totalPnl) : '—'}
+        </div>
+      </div>
+      <div class="history-stat">
+        <div class="history-stat-label">Win Rate</div>
+        <div class="history-stat-value ${winRate !== null ? (winRate >= 50 ? 'positive' : 'negative') : ''}">
+          ${winRate !== null ? `${winRate.toFixed(0)}%` : '—'}
+        </div>
+      </div>
+      <div class="history-stat">
+        <div class="history-stat-label">Avg per Close</div>
+        <div class="history-stat-value ${avgPnl !== null ? (avgPnl >= 0 ? 'positive' : 'negative') : ''}">
+          ${avgPnl !== null ? fmtPnl(avgPnl) : '—'}
+        </div>
+      </div>
+    `;
+  }
+
+  // Table rows
+  tbody.innerHTML = withPnl.map(t => {
+    const side = (t.side || '').toLowerCase();
+    const qty = Number(t.quantity) || 0;
+    const price = Number(t.price) || 0;
+    const value = qty * price;
+    const statusStr = (t.status || 'pending').toLowerCase();
+    const pnlStr = t.pnl !== null ? `${t.pnl >= 0 ? '+' : '-'}$${Math.abs(t.pnl).toFixed(2)}` : '—';
+    const pnlClass = t.pnl !== null ? (t.pnl >= 0 ? 'positive' : 'negative') : '';
+
+    const d = new Date(t.timestamp.replace(' ', 'T') + 'Z');
+    const tsStr = d.toLocaleString('en-US', {
+      timeZone: 'America/Toronto', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+
+    return `<tr>
+      <td style="font-family:monospace; font-size:12px; color:var(--muted);">${escHtml(tsStr)}</td>
+      <td><span class="ticker">${escHtml(t.ticker)}</span></td>
+      <td><span class="trade-side-${escHtml(side)}">${side.toUpperCase()}</span></td>
+      <td class="num">${qty % 1 === 0 ? qty : qty.toFixed(4)}</td>
+      <td class="num">$${price.toFixed(2)}</td>
+      <td class="num">$${value.toFixed(2)}</td>
+      <td class="num ${pnlClass}">${escHtml(pnlStr)}</td>
+      <td><span class="trade-status status-${escHtml(statusStr)}">${escHtml((t.status || '?').toUpperCase())}</span></td>
+    </tr>`;
+  }).join('');
 }
 
 // ─── Toast Notifications ───

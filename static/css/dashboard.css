@@ -623,6 +623,68 @@ input[type="range"] {
   letter-spacing: 0.04em;
 }
 
+/* ─── Nav Tabs ─── */
+.nav-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-tab {
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  transition: color 0.15s;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* ─── History Tab ─── */
+.history-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.history-stat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.history-stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.history-stat-value {
+  font-size: 20px;
+  font-weight: 600;
+}
+.trade-side-buy  { color: var(--green); font-weight: 700; font-size: 11px; letter-spacing: 0.05em; }
+.trade-side-sell { color: var(--red);   font-weight: 700; font-size: 11px; letter-spacing: 0.05em; }
+.trade-status {
+  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: 0.04em; display: inline-block;
+}
+.status-filled    { background: rgba(63,185,80,0.12);  color: var(--green);  border: 1px solid rgba(63,185,80,0.2); }
+.status-pending   { background: rgba(210,153,34,0.12); color: var(--yellow); border: 1px solid rgba(210,153,34,0.2); }
+.status-failed    { background: rgba(248,81,73,0.12);  color: var(--red);    border: 1px solid rgba(248,81,73,0.2); }
+.status-triggered { background: rgba(47,129,247,0.12); color: var(--accent); border: 1px solid rgba(47,129,247,0.2); }
+
 /* ─── Flex Helpers ─── */
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
