@@ -17,6 +17,7 @@ let state = {
   agentLog: [],
   agentFilter: 'all',
   tradeHistory: [],
+  equityHistory: [],
 };
 
 let pollTimer = null;
@@ -113,18 +114,20 @@ async function refreshAll() {
   _refreshing = true;
   showLoading(true);
   try {
-    const [portfolio, assets, pending, conditional, historyData] = await Promise.all([
+    const [portfolio, assets, pending, conditional, historyData, equityData] = await Promise.all([
       fetchPortfolio(),
       fetchAssets(),
       fetchPendingOrders(),
       fetchConditionalOrders(),
       fetchAPI('/history').catch(() => ({ trades: [] })),
+      fetchAPI('/equity-history').catch(() => ({ history: [] })),
     ]);
     state.portfolio = portfolio;
     state.assets = assets.assets || [];
     state.pendingOrders = pending.pending_orders || [];
     state.conditionalOrders = conditional.orders || [];
     state.tradeHistory = historyData.trades || [];
+    state.equityHistory = equityData.history || [];
     state.lastFetch = new Date();
     fetchCount++;
 
@@ -715,7 +718,7 @@ function renderEquityChart() {
   const canvas = document.getElementById('equity-chart');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const history = state.portfolio?.equity_history || [];
+  const history = state.equityHistory || [];
 
   if (!history.length) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1197,7 +1200,7 @@ function computeTradePnL(trades) {
     const qty = Number(t.quantity) || 0;
     const price = Number(t.price) || 0;
 
-    if (side === 'buy') {
+    if (side === 'buy' && qty > 0) {
       costBasis[ticker].push({ qty, price });
     } else if (side === 'sell') {
       let remaining = qty;
@@ -1275,7 +1278,11 @@ function renderHistory() {
     const side = (t.side || '').toLowerCase();
     const qty = Number(t.quantity) || 0;
     const price = Number(t.price) || 0;
-    const value = qty * price;
+    // Market buys are dollar-based: quantity=0, price=dollar_notional
+    const isMktBuyNotional = side === 'buy' && qty === 0 && price > 0;
+    const displayQty   = isMktBuyNotional ? '—' : (qty % 1 === 0 ? qty.toString() : qty.toFixed(4));
+    const displayPrice = isMktBuyNotional ? 'MKT' : `$${price.toFixed(2)}`;
+    const displayValue = isMktBuyNotional ? `$${price.toFixed(2)}` : `$${(qty * price).toFixed(2)}`;
     const statusStr = (t.status || 'pending').toLowerCase();
     const pnlStr = t.pnl !== null ? `${t.pnl >= 0 ? '+' : '-'}$${Math.abs(t.pnl).toFixed(2)}` : '—';
     const pnlClass = t.pnl !== null ? (t.pnl >= 0 ? 'positive' : 'negative') : '';
@@ -1290,9 +1297,9 @@ function renderHistory() {
       <td style="font-family:monospace; font-size:12px; color:var(--muted);">${escHtml(tsStr)}</td>
       <td><span class="ticker">${escHtml(t.ticker)}</span></td>
       <td><span class="trade-side-${escHtml(side)}">${side.toUpperCase()}</span></td>
-      <td class="num">${qty % 1 === 0 ? qty : qty.toFixed(4)}</td>
-      <td class="num">$${price.toFixed(2)}</td>
-      <td class="num">$${value.toFixed(2)}</td>
+      <td class="num">${escHtml(displayQty)}</td>
+      <td class="num">${escHtml(displayPrice)}</td>
+      <td class="num">${displayValue}</td>
       <td class="num ${pnlClass}">${escHtml(pnlStr)}</td>
       <td><span class="trade-status status-${escHtml(statusStr)}">${escHtml((t.status || '?').toUpperCase())}</span></td>
     </tr>`;

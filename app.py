@@ -479,15 +479,20 @@ def api_orders():
             )
             try:
                 order_ids = result.get('orderIds', [])
+                ticker = body.get('ticker', '')
+                qty = body.get('order_quantity') or 0
+                amount = body.get('order_amount') or 0
+                # For sells (qty-based), look up current market price as fill price
+                if side == 'SELL' and qty and not amount:
+                    prices = get_prices(get_api_key())
+                    amount = prices.get(ticker, 0)
                 db = get_db()
                 db.execute(
                     'INSERT INTO trade_log (timestamp,order_id,ticker,side,quantity,price,order_type,status) VALUES (?,?,?,?,?,?,?,?)',
                     (datetime.utcnow().isoformat(),
                      order_ids[0] if order_ids else '',
-                     body.get('ticker', ''), side,
-                     body.get('order_quantity') or 0,
-                     body.get('order_amount') or 0,
-                     'MARKET', 'PENDING')
+                     ticker, side, qty, amount,
+                     'MARKET', 'FILLED')
                 )
                 db.commit()
                 db.close()
@@ -665,10 +670,15 @@ def api_equity_history():
     try:
         db = get_db()
         rows = db.execute(
-            'SELECT timestamp, total_equity FROM equity_log ORDER BY id ASC LIMIT 200'
+            'SELECT timestamp, total_equity FROM equity_log WHERE total_equity > 0 ORDER BY id ASC'
         ).fetchall()
         db.close()
-        return jsonify({'history': [r['total_equity'] for r in rows]})
+        # Downsample to at most 300 points, evenly spaced
+        pts = [r['total_equity'] for r in rows]
+        if len(pts) > 300:
+            step = len(pts) / 300
+            pts = [pts[int(i * step)] for i in range(300)]
+        return jsonify({'history': pts})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
